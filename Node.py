@@ -2,15 +2,26 @@
 
 import socket
 import pickle
+import hashlib
+import copy
 from Mensagem import Mensagem
+from MsgCheckSum import MsgCheckSum
 
 def testCom(sock, server_address):
     msg = Mensagem()
     msgString = pickle.dumps(msg)
     sock.sendto(msgString, server_address)
 
-def joinDHT():
-    pass
+def newNode(sock, server_address):
+    msg = Mensagem()
+    msg.op = 1
+    sock.bind('localhost', 0)
+    msgString = pickle.dumps(msg)
+    msgCheckSum = MsgCheckSum()
+    msgCheckSum.msg = msg
+    msgCheckSum.checkSum = hashlib.md5(msgString)
+    msgCheckSumString = pickle.dumps(msgCheckSum)
+    sock.sendto(msgCheckSumString, server_address)
 
 def main():
     nodeID = -1
@@ -39,7 +50,7 @@ def main():
         testCom(sock, server_address)
 
     elif op == '1':
-        joinDHT()
+        newNode(sock, server_address)
 
 if __name__ == "__main__":
     main()

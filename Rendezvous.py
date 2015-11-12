@@ -2,7 +2,9 @@
 
 import socket
 import pickle
+import hashlib
 from Mensagem import Mensagem
+from MsgCheckSum import MsgCheckSum
 
 def main():
     rootID = -1
@@ -15,8 +17,11 @@ def main():
     sock.bind(server_address)
 
     while True:
-        msgString, addr = sock.recvfrom(1024)
-        msg = pickle.loads(msgString)
+        msgCheckSumStringN, addr = sock.recvfrom(1024)
+        msgCheckSumN = pickle.loads(msgCheckSumStringN)
+        assert isinstance(msgCheckSumN, MsgCheckSum)
+        msgStringS = pickle.dumps(msgCheckSumN.msg )
+        msgCheckSumS = hashlib.md5()
 
         assert isinstance(msg, Mensagem)
         if msg.op == -1:
