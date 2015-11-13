@@ -3,13 +3,23 @@
 import socket
 import pickle
 import hashlib
+import random
 from Mensagem import Mensagem
-from MsgCheckSum import MsgCheckSum
+NODE_MAX = 100
+
+def gerarID(usedIDs):
+    nodeID = random.randint(0, NODE_MAX)
+    while (nodeID in usedIDs):
+        nodeID = random.randint(0, NODE_MAX)
+    usedIDs = usedIDs.append(nodeID)
+    return nodeID, usedIDs
 
 def main():
     rootID = -1
     rootIP = -1
     rootPort = -1
+    nodeIDAddr = -1
+    usedIDs = []
     DHTlocal = -1
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -17,15 +27,21 @@ def main():
     sock.bind(server_address)
 
     while True:
-        msgCheckSumStringN, addr = sock.recvfrom(1024)
-        msgCheckSumN = pickle.loads(msgCheckSumStringN)
-        assert isinstance(msgCheckSumN, MsgCheckSum)
-        msgStringS = pickle.dumps(msgCheckSumN.msg )
-        msgCheckSumS = hashlib.md5()
+        msgString, addr = sock.recvfrom(1024)
+        msg = pickle.loads(msgString)
 
-        assert isinstance(msg, Mensagem)
-        if msg.op == -1:
-            print('op  = %d' % msg.op)
+        # Tratamento do caso 0 (teste).
+        if msg.op == -1 and msg.flagRoot == -1 and msg.nodeID == -1 and\
+           msg.listaIDIP == -1 and msg.listaKeyValue == -1:
+            print('Teste ok !!!')
+
+        # Tratamento do caso 1 (Entrar na DHT).
+        if msg.op == 1:
+            msg = Mensagem()
+            msg.op = 2
+            msg.nodeID = gerarID(usedIDs)
+
+
 
 if __name__ == "__main__":
     main()
