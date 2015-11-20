@@ -94,7 +94,7 @@ def threadListen():
             if msgR.flagRoot == 1:
                 newNodeAns_Ack(addr)
             if msgR.flagRoot == 0:
-                newNodeAns_joinDHT()
+                newNodeAns_isNext()
 
 
 ############################### Thread Start Communication ###############################
@@ -173,16 +173,22 @@ def newNode():
     print("===== op = 1 (newNode) =====> rendezvous")
     sendNWait(server_addr)
 
+# Utilizada caso o nó seja o root.
 def newNodeAns_Ack(addr):
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
     seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
     sock, server_addr
 
+    # Atualizando estado
     nodeID = msgR.nodeID
     root = 1
     rootID = nodeID
     rootAddr = sock.getsockname()
+    prevID = rootID
+    prevAddr = rootAddr
+    nextID = rootID
+    nextAddr = rootAddr
     # Confirmando o recebimento da mensagem op = 2 (newNodeAns)
     # com um ack.
     msg = Mensagem()
@@ -190,16 +196,22 @@ def newNodeAns_Ack(addr):
     print("===== op = 0 (Ack) =====> rendezvous")
     sendNWait(addr)
 
-def newNodeAns_joinDHT():
+# Utilizada caso o nó não seja o root.
+def newNodeAns_isNext():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
     seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
     sock, server_addr
 
+    # Atualizando estado
     nodeID = msgR.nodeID
     root = 0
     rootID = msgR.listaIDAddr[0][0]
     rootAddr = msgR.listaIDAddr[0][1]
+    # Criando mensagem
+    msg = Mensagem()
+    msg.op = 3
+    msg.nodeID = nodeID
 
 ############################### Main ###############################
 def main():

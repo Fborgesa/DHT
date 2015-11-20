@@ -9,7 +9,7 @@ suirtEspecificação da arquitetura DHT
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |       op      |      seq      |     ack       |   flagRoot    |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                             nodeID                            |        
+|            flagIsNext         |             nodeID            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                           listaIDAddr                         | Campo de tamanho variável. Pode conter uma
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ ou várias entradas do tipo (nodeID, IP).
@@ -24,14 +24,15 @@ suirtEspecificação da arquitetura DHT
         0 (ack) -> confirma o recebimento de uma mensagem.
         1 (newNode) -> comunica ao rendezvous que o nó quer entrar na DHT.
         2 (newNodeAns) -> resposta dos rendezvous a uma mensagem newNode.
-        3 (joinDHT) -> comunica ao rootID que o nó quer entrar na DHT. 
-        4 (joinDHTAns) -> resposta do rootNode a uma mensagem joinDHT.
+        3 (isPrev) -> checa se o nó é seu antecessor.
+        4 (isPrevAns) -> resposta do nó a uma mensagem isPrev.
         5 (joinAsNext) -> comunica a uma nó que um novo nó quer entrar na DHT como seu sucessor.
         6 (joinAsNextAns) -> resposta do nó a uma mensagem joinAsNext.
         7 (joinAsPrev) -> comunica a uma nó que um novo nó quer entrar na DHT como seu antecessor.
         8 (joinAsPrevAns) -> resposta do nó a uma mensagem joinAsPrev.
         9 (joinedDHT) -> comunica ao rendezvous que o nó entrou na DHT.
         10 (leaveDHT)
+
     - flagRoot:
         Indica se um novo nó é o root ou não. 
         0 no caso de não. 
@@ -156,8 +157,7 @@ suirtEspecificação da arquitetura DHT
     nó ====================== op = 1 (newNode) =======================>>> rendezvous point
                                                                           -> gera um nodeID de forma aleatória.
                                                                           -> insere a entrada (nodeID) na tabela nodeID_IP.     # A entrada é inserida
-                                                                                                                                    # de forma ordenada.
-                                                                          -> insere o nó na DHT local.
+                                                                                                                                # de forma ordenada.
                                                                           -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
                                                                           op = 2 (newNodeAns), flagRoot = 0, nodeID, (rootID, rootIP:rootPort).
                                                                           -> avisa como vai ser a busca no DHT (sentido horário ou não).
@@ -171,14 +171,19 @@ suirtEspecificação da arquitetura DHT
     -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
     op = 3 (joinDHT), nodeID.
    
-    nó ======================= op = 3 (joinDHT) ======================>>> rootNode
-                                                                          
+    nó ======================= op = 3 (isNext) ======================>>> rootNode
+                                                                          if (rootNode for o antecessor):
+                                                                                flagIsNext = 1;
+                                                                                listaIDAdrr = seus proprios ID e Addr.
+                                                                          else:
+                                                                                flagIsNext = 0;
+                                                                                listaIDAdrr = proximo a ser perguntado.
                                                                           -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
-                                                                          op = 4 (joinDHTAns), (prevID, prevIP) do rootNode.
+                                                                          op = 4 (isPrevAns).
                                                                           
-    nó <<<=================== op = 4 (joinDHTAns) ======================= rootNode
+    nó <<<=================== op = 4 (isNextAns) ======================= rootNode
     -> seta os seguintes campos: 
-    prevID1, prevIP1.
+    prevID1, prevAddr1.
     -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
     op = 5 (joinAsNext), nodeID.
        
