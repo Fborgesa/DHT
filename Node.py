@@ -23,9 +23,12 @@ nextAddr = -1
 nextID2 = -1
 nextAddr2 = -1
 seq = 0
+lastOP = 0
 listaKeyValue = []
-msg = -1
+msg = Mensagem()
 msgString = -1
+msgR = Mensagem()
+msgStringR = -1
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_addr = ('localhost', 30000)
@@ -36,8 +39,11 @@ server_addr = ('localhost', 30000)
 def threadListen():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
-    seq, listaKeyValue, msg, msgString, sock, server_addr
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
 
+    # Variáveis que definem quantos timeouts ocorreram e quantos números de sequência
+    # chegaram dessincronizados.
     timeOuts = 0
     seqNum = 0
 
@@ -48,32 +54,44 @@ def threadListen():
             msgR = pickle.loads(msgStringR)
             print("op = %d. Recebida." % msgR.op)
 #            print ("msg.ack = %d. seq = %d." % (msgR.ack, seq))
+
+            # Caso a mensagem chegue com o número de sequência dessicronizado.
             if sock.gettimeout() != None and msgR.ack != seq:
                 print("Número de sequência dessincronizado.")
                 msgR.op = -1
                 if seqNum == 2:
                     sock.settimeout(None)
+                    timeOuts = 0
+                    seqNum = 0
                 else:
                     print("Reenvio ===== op = %d =====>" % msg.op)
                     sock.sendto(msgString, addr)
                     seqNum = seqNum + 1
+
+            # Caso a mensagem chegue corretamente.
             else:
                 sock.settimeout(None)
+                timeOuts = 0
+                seqNum = 0
                 seq = (seq - 1 if seq == 1 else seq + 1)
 
-        # O Node tenta reenviar a mensagem 3 vezes, Caso o destino não responda ele desiste.
+        # Caso a resposta não chegue.
+        # O Node tenta reenviar a mensagem 2 vezes, Caso o destino não responda ele desiste.
         except socket.timeout:
             print ("Destino não responde.")
             msgR.op = -1
             if timeOuts == 2:
                 sock.settimeout(None)
+                timeOuts = 0
+                seqNum = 0
             else:
                 print("Reenvio ===== op = %d =====>" % msg.op)
                 sock.sendto(msgString, addr)
                 timeOuts = timeOuts + 1
 
+        # Tratamento de cada caso
         if msgR.op == 2:
-            newNodeAns(msgR)
+            newNodeAns_Ack(addr)
 
 ############################### Thread Start Communication ###############################
 # Thread que exibe o menu e interage com o usuário. Nela estão os tratamentos das
@@ -81,7 +99,8 @@ def threadListen():
 def threadStartCommu():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
-    seq, listaKeyValue, msg, msgString, sock, server_addr
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
 
     while True:
         op = input("\
@@ -117,9 +136,14 @@ def threadStartCommu():
 def sendNWait(addr):
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
-    seq, listaKeyValue, msg, msgString, sock, server_addr
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
 
-    sock.settimeout(2)
+    msg.ack = msgR.seq
+    msg.seq = seq
+    lastOP = msg.op
+    if msg.op != 0:
+        sock.settimeout(2)
     msgString = pickle.dumps(msg)
     sock.sendto(msgString, addr)
     time.sleep(20)
@@ -127,7 +151,8 @@ def sendNWait(addr):
 def testCom():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
-    seq, listaKeyValue, msg, msgString, sock, server_addr
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
 
     msg = Mensagem()
     msgString = pickle.dumps(msg)
@@ -136,19 +161,19 @@ def testCom():
 def newNode():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
-    seq, listaKeyValue, msg, msgString, sock, server_addr
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
 
     msg = Mensagem()
     msg.op = 1
-    msg.seq = seq
-    print("%s" % sock.getsockname)
     print("===== op = 1 (newNode) =====> rendezvous")
     sendNWait(server_addr)
 
-def newNodeAns(msgR):
+def newNodeAns_Ack(addr):
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
-    seq, listaKeyValue, msg, msgString, sock, server_addr
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
 
     if msgR.flagRoot == 1:
         nodeID = msgR.nodeID
@@ -159,11 +184,8 @@ def newNodeAns(msgR):
         # com um ack.
         msg = Mensagem()
         msg.op = 0
-        msg.ack = msgR.seq
-        msg.seq = seq
-        msgString = pickle.dumps(msg)
         print("===== op = 0 (Ack) =====> rendezvous")
-        sock.sendto(msgString, server_addr)
+        sendNWait(addr)
 
     # Caso a mensagem recebida seja uma op = 2 (newnodeAns)
     # e o nó NÃO seja indicado como root.
@@ -174,7 +196,8 @@ def newNodeAns(msgR):
 def main():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
-    seq, listaKeyValue, msg, msgString, sock, server_addr
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
 
     sock.bind(('localhost', 0))
 
