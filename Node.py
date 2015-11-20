@@ -58,7 +58,7 @@ def threadListen():
             # Caso a mensagem chegue com o número de sequência dessicronizado.
             if sock.gettimeout() != None and msgR.ack != seq:
                 print("Número de sequência dessincronizado.")
-                msgR.op = -1
+                msgR.op = -2
                 if seqNum == 2:
                     sock.settimeout(None)
                     timeOuts = 0
@@ -79,7 +79,7 @@ def threadListen():
         # O Node tenta reenviar a mensagem 2 vezes, Caso o destino não responda ele desiste.
         except socket.timeout:
             print ("Destino não responde.")
-            msgR.op = -1
+            msgR.op = -2
             if timeOuts == 2:
                 sock.settimeout(None)
                 timeOuts = 0
@@ -89,9 +89,13 @@ def threadListen():
                 sock.sendto(msgString, addr)
                 timeOuts = timeOuts + 1
 
-        # Tratamento de cada caso
+        ### Tratamento de cada caso
         if msgR.op == 2:
-            newNodeAns_Ack(addr)
+            if msgR.flagRoot == 1:
+                newNodeAns_Ack(addr)
+            if msgR.flagRoot == 0:
+                newNodeAns_joinDHT()
+
 
 ############################### Thread Start Communication ###############################
 # Thread que exibe o menu e interage com o usuário. Nela estão os tratamentos das
@@ -146,7 +150,7 @@ def sendNWait(addr):
         sock.settimeout(2)
     msgString = pickle.dumps(msg)
     sock.sendto(msgString, addr)
-    time.sleep(20)
+    time.sleep(3)
 
 def testCom():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
@@ -175,22 +179,27 @@ def newNodeAns_Ack(addr):
     seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
     sock, server_addr
 
-    if msgR.flagRoot == 1:
-        nodeID = msgR.nodeID
-        root = 1
-        rootID = nodeID
-        rootAddr = sock.getsockname()
-        # Confirmando o recebimento da mensagem op = 2 (newNodeAns)
-        # com um ack.
-        msg = Mensagem()
-        msg.op = 0
-        print("===== op = 0 (Ack) =====> rendezvous")
-        sendNWait(addr)
+    nodeID = msgR.nodeID
+    root = 1
+    rootID = nodeID
+    rootAddr = sock.getsockname()
+    # Confirmando o recebimento da mensagem op = 2 (newNodeAns)
+    # com um ack.
+    msg = Mensagem()
+    msg.op = 0
+    print("===== op = 0 (Ack) =====> rendezvous")
+    sendNWait(addr)
 
-    # Caso a mensagem recebida seja uma op = 2 (newnodeAns)
-    # e o nó NÃO seja indicado como root.
-    if msgR.flagRoot == 0:
-        pass
+def newNodeAns_joinDHT():
+    global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
+    prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
+    seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
+
+    nodeID = msgR.nodeID
+    root = 0
+    rootID = msgR.listaIDAddr[0][0]
+    rootAddr = msgR.listaIDAddr[0][1]
 
 ############################### Main ###############################
 def main():

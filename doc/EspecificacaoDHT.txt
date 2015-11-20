@@ -7,12 +7,14 @@ suirtEspecificação da arquitetura DHT
 1.2. Formato das mensagens.
 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|       op      |    flagRoot   |             nodeID            |
+|       op      |      seq      |     ack       |   flagRoot    |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                           listaIDIP                           | Campo de tamanho variável. Pode conter uma ou várias entradas do tipo (nodeID, IP).
+|                             nodeID                            |        
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                          listaKeyValue                        | Campo de tamanho variável. Pode conter uma ou várias entradas do tipo (key, value).
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                           listaIDAddr                         | Campo de tamanho variável. Pode conter uma
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ ou várias entradas do tipo (nodeID, IP).
+|                          listaKeyValue                        | Campo de tamanho variável. Pode conter uma 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ ou várias entradas do tipo (key, value).
 |                           Checksum                            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -39,7 +41,7 @@ suirtEspecificação da arquitetura DHT
         caso op == 3 -> informa o nodeID do nó que quer entrar na DHT.
         caso op == 5 -> informa o nodeID do nó que quer entrar na DHT.
         caso op == 7 -> informa o nodeID do nó que quer entrar na DHT.   
-        caso op == 9 -> informa o nodeID do nó que quer entrou na DHT. 
+        caso op == 9 -> informa o nodeID do nó que quer entrar na DHT. 
 
 2. Responsabilidades de cada entidade:
 2.1. Rendezvous point
@@ -90,6 +92,8 @@ suirtEspecificação da arquitetura DHT
 
         - seta o tempo de espera do Ack do nó entrante;
 
+3.3 Gerenciameto do DHT local:
+
 4. Detalhamento das funcionalidades do nó:
 
 4.1. Envio da requisição de conexão ao rendezvous:
@@ -132,7 +136,7 @@ suirtEspecificação da arquitetura DHT
     nó <<<=================== op = 2 (newNodeAns) ======================= rendezvous point
     if (flagRoot == 1)
     -> seta os seguintes campos:
-    nodeID, root = 1, rootID, rootIP,
+    nodeID, root = 1, rootID, rootAddr,
     prevID1 = -1, prevIP1 = -1, prevID2 = -1, prevIP2 = -1,
     nextID1 = -1, nextIP1 = -1, nextID2 = -1, nextIP2 = -1.
     
@@ -141,10 +145,7 @@ suirtEspecificação da arquitetura DHT
     nó ====================== op = 0 (Ack) =============================> rendezvous point
                                                                           -> associa o IP:Porta com com nodeID do rootNode gerado;
                                                                           -> atualiza sua DHT local.
-
-    
-    5.1.1 Caso o rendezvous enviasse o ack de confirmação e não chegou para o nó
-    
+        
             
 5.2. Entrada de um novo nó na DHT, já com outros nós presentes.
 
@@ -218,6 +219,9 @@ suirtEspecificação da arquitetura DHT
 
 
 5.3. Saída de um nó da DHT, com aviso prévio.
+    nó ===================== op = seg (saida de nó) ====================> 
+      -> Transferir chave do nó a ser retirado
+      -> 
 
     5.3.1. caso o nó que saisse do DHT fosse o nó raiz
   
@@ -234,4 +238,3 @@ suirtEspecificação da arquitetura DHT
 5.7. Atualização de uma entrada (key, value) da DHT.
 
 5.8. Busca de um valor a partir de uma chave.
-
