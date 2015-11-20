@@ -30,7 +30,7 @@ def rdt_send(msg, seq, sock, addr):
             msg = pickle.loads(msgString)
             time.sleep(1)
             print("op = %d. Recebida." % msg.op)
-            print ("msg.ack = %d. seq = %d." % (msg.ack, seq))
+#            print ("msg.ack = %d. seq = %d." % (msg.ack, seq))
             if msg.ack != seq:
                 if seqNum == 2:
                     print("Número de sequência dessincronizado.")
@@ -38,7 +38,8 @@ def rdt_send(msg, seq, sock, addr):
                 sock.sendto(msgString, addr)
                 seqNum = seqNum + 1
             else:
-                return msg, seq + 1
+                sock.settimeout(None)
+                return msg, (seq - 1 if seq == 1 else seq + 1)
         except socket.timeout:
             if timeOuts == 2:
                 print ("Destino não responde.")

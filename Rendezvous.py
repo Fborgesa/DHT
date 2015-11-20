@@ -9,6 +9,7 @@ import RDT
 from Mensagem import Mensagem
 NODE_MAX = 100
 
+############################### Estado do Rendezvous ###############################
 rootID = -1
 rootAddr = -1
 rootPort = -1
@@ -18,6 +19,8 @@ nodeIDAddr = []
 usedIDs = []
 DHTlocal = []
 
+############################### Definições das funções   ###############################
+############################### que tratam cada mensagem ###############################
 def gerarID(usedIDs):
     nodeID = random.randint(0, NODE_MAX)
     while (nodeID in usedIDs):
@@ -41,6 +44,7 @@ def entrarDHT(msg, sock, addr):
             rootID = offerIDAddr[0]
             rootAddr = offerIDAddr[1]
 
+############################### Main ###############################
 def main():
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
