@@ -31,7 +31,7 @@ suirtEspecificação da arquitetura DHT
         7 (joinAsPrev) -> comunica a uma nó que um novo nó quer entrar na DHT como seu antecessor.
         8 (joinAsPrevAns) -> resposta do nó a uma mensagem joinAsPrev.
         9 (joinedDHT) -> comunica ao rendezvous que o nó entrou na DHT.
-        10 (leaveDHT)
+        10 (leaveDHT) -> comunicando a saída do nó antecessor no DHT ao rendezvous.
     - flagRoot:
         Indica se um novo nó é o root ou não. 
         0 no caso de não. 
@@ -219,17 +219,25 @@ suirtEspecificação da arquitetura DHT
 
 
 5.3. Saída de um nó da DHT, com aviso prévio.
-    nó ===================== op = seg (saida de nó) ====================> 
-      -> Transferir chave do nó a ser retirado
-      -> 
 
-    5.3.1. caso o nó que saisse do DHT fosse o nó raiz
-  
-  
-    5.3.2 caso o nó que saisse do DHT não fosse o nó raiz                 
+    5.3.1 caso o nó que saisse do DHT não fosse o nó raiz
+
+    nó ===================== op =  (saida de nó) ====================> antecessor & sucessor
+      -> Transferir chave do nó a ser retirado para os nó sucessor          -> ajustar os ponteiros dos nó antecessor e sucessor
+
+   
+    sucessor =============== op =   ()  ===============================>>> rendezvous
+      -> gerar e enviar mensagem para rendezvous			  -> atualizar o DHT local
+	avisar a saída do antecessor					  -> responder Ack do recebimento
+   sucessor
+
+    5.3.2. caso o nó que saisse do DHT fosse o nó raiz                 
 
 
 5.4. Saída de um nó da DHT, sem aviso prévio. (O nó caiu).
+
+    nó antecessor ====================== op =  (perda de conex) =======>>> nó sucessor
+    
 
 5.5. Inserção de uma entrada (key, value) na DHT.
 
