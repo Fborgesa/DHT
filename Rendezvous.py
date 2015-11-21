@@ -8,7 +8,7 @@ import time
 import _thread
 import RDT
 from Mensagem import Mensagem
-NODE_MAX = 100
+NODE_MAX = 256
 
 ############################### Estado do Rendezvous ###############################
 rootID = -1
@@ -72,6 +72,14 @@ def gerarID():
     usedIDs.append(nodeID)
     return nodeID
 
+def dist(a,b):
+    if (a == b):
+        return 0
+    elif (a < b):
+        return b-a
+    else:
+        return 256 + b - a
+
 def newNode_newNodeAns(addr):
     global rootID, rootAddr, rootPort, offerIDAddr, seq, lastOp,\
     nodeIDAddr, usedIDs, DHTlocal, msg, msgString, msgR, msgStringR,\
@@ -91,6 +99,13 @@ def newNode_newNodeAns(addr):
         msg.listaIDAddr.append(listaIDAddr[0])
         print ("nó <===== op = 2 (newNodeAns) =====")
         sendNWait(addr)
+
+def isNext_isNextAns():
+    global rootID, rootAddr, rootPort, offerIDAddr, seq, lastOp,\
+    nodeIDAddr, usedIDs, DHTlocal, msg, msgString, msgR, msgStringR,\
+    sock, server_addr
+
+    # Se nodeID do nó anterior for maior que o root
 
 ############################### Main ###############################
 def main():
@@ -165,10 +180,11 @@ def main():
             rootAddr = offerIDAddr[1]
             listaIDAddr.append(offerIDAddr)
 
-        # Tratamento do caso 1 (Entrar na DHT).
         if msgR.op == 1:
             newNode_newNodeAns(addr)
 
+        if msgR.op == 3:
+            isNext_isNextAns()
 
 if __name__ == "__main__":
     main()
