@@ -1,6 +1,6 @@
 suirtEspecificação da arquitetura DHT
 
-1. Introdução 
+1. Introdução
 1.1. Visão geral.
     A porta utilizada pelos nós e pelo rendezvous é a porta UDP 30000.
 
@@ -13,14 +13,14 @@ suirtEspecificação da arquitetura DHT
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                           listaIDAddr                         | Campo de tamanho variável. Pode conter uma
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ ou várias entradas do tipo (nodeID, IP).
-|                          listaKeyValue                        | Campo de tamanho variável. Pode conter uma 
+|                          listaKeyValue                        | Campo de tamanho variável. Pode conter uma
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ ou várias entradas do tipo (key, value).
 |                           Checksum                            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 1.3. Significado de cada campo:
 *** Observação: caso haja dúvidas sobre os significados dos campos ou seus funcionamentos, veja o exemplo 5.2.
-    - op: 
+    - op:
         0 (ack) -> confirma o recebimento de uma mensagem.
         1 (newNode) -> comunica ao rendezvous que o nó quer entrar na DHT.
         2 (newNodeAns) -> resposta dos rendezvous a uma mensagem newNode.
@@ -38,15 +38,15 @@ suirtEspecificação da arquitetura DHT
 
 >>>>>>> 1f372091f7d1bca72ec2d657da6ab65f51c5fe8e
     - flagRoot:
-        Indica se um novo nó é o root ou não. 
-        0 no caso de não. 
-        1 no caso de sim. 
+        Indica se um novo nó é o root ou não.
+        0 no caso de não.
+        1 no caso de sim.
     - nodeID:
         caso op == 2 -> informa o nodeID do novo nó. Nesse caso o nodeID foi gerado pelo rendezvous.
         caso op == 3 -> informa o nodeID do nó que quer entrar na DHT.
         caso op == 5 -> informa o nodeID do nó que quer entrar na DHT.
-        caso op == 7 -> informa o nodeID do nó que quer entrar na DHT.   
-        caso op == 9 -> informa o nodeID do nó que quer entrar na DHT. 
+        caso op == 7 -> informa o nodeID do nó que quer entrar na DHT.
+        caso op == 9 -> informa o nodeID do nó que quer entrar na DHT.
 
 2. Responsabilidades de cada entidade:
 2.1. Rendezvous point
@@ -82,7 +82,7 @@ suirtEspecificação da arquitetura DHT
     - A decisão de utilizar um intervalo entre [0, k] ou [2, k] é indicada através de um
       arquivo de configuração chamado "range.conf".
     - O nodeID é atribuido ao nó entrante na resposta do rendezvous ao nó, assumindo que o nó vai entrar na rede (DHT);
-      
+
 3.2. Define o rootNode:
 
     - Verfica a existência do DHT local para a definição do rootNode:
@@ -111,7 +111,7 @@ suirtEspecificação da arquitetura DHT
         * Caso for novo nó entrante:
             - Recebe as informações do rendezvous (ID e IP:Porta do rootNode);
             - Armazena o ID recebido;
-            
+
 
 4.2. Entrada do nó no DHT:
     - contacta o rootNode para inserção na rede;
@@ -133,31 +133,31 @@ suirtEspecificação da arquitetura DHT
                                                                           -> gera um nodeID de forma aleatória.
                                                                           -> insere a entrada (nodeID) na tabela nodeID_IP.     # A entrada é inserida
                                                                                                                                 # de forma ordenada.
-                                                                          -> seta o seguinte campo: 
+                                                                          -> seta o seguinte campo:
                                                                           rootID = nodeID.
-                                                                          -> cria o objeto a ser enviado para o nó com os seguintes parâmetros: 
+                                                                          -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
                                                                           op = 2 (newNodeAns), flagRoot = 1, nodeID.
-                                                                          
+
     nó <<<=================== op = 2 (newNodeAns) ======================= rendezvous point
     if (flagRoot == 1)
     -> seta os seguintes campos:
     nodeID, root = 1, rootID, rootAddr,
     prevID1 = -1, prevIP1 = -1, prevID2 = -1, prevIP2 = -1,
     nextID1 = -1, nextIP1 = -1, nextID2 = -1, nextIP2 = -1.
-    
+
     -> cria um pacote com os parâmetros: IP:Porta no qual vai estar
         escutando os novos nó;
     nó ====================== op = 0 (Ack) =============================> rendezvous point
                                                                           -> associa o IP:Porta com com nodeID do rootNode gerado;
                                                                           -> atualiza sua DHT local.
-        
-            
+
+
 5.2. Entrada de um novo nó na DHT, já com outros nós presentes.
 
     -> cria o objeto a ser enviado para o rendezvous com os seguintes
     parâmetros:
     op = 1 (newNode)
-    
+
     nó ====================== op = 1 (newNode) =======================>>> rendezvous point
                                                                           -> gera um nodeID de forma aleatória.
                                                                           -> insere a entrada (nodeID) na tabela nodeID_IP.     # A entrada é inserida
@@ -165,16 +165,18 @@ suirtEspecificação da arquitetura DHT
                                                                           -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
                                                                           op = 2 (newNodeAns), flagRoot = 0, nodeID, (rootID, rootIP:rootPort).
                                                                           -> avisa como vai ser a busca no DHT (sentido horário ou não).
-                                                                          
+
     nó <<<=================== op = 2 (newNodeAns) ======================= rendezvous point
     if (flagRoot == 0)
     -> seta os seguintes campos:
     nodeID, root = 0, rootID, rootIP:rootPort,
     prevID1 = -1, prevIP1 = -1, prevID2 = -1, prevIP2 = -1,
     nextID1 = -1, nextIP1 = -1, nextID2 = -1, nextIP2 = -1.
+
+    nó ====================== op =
     -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
     op = 3 (joinDHT), nodeID.
-   
+
     nó ======================= op = 3 (isNext) ======================>>> rootNode
                                                                           if (rootNode for o antecessor):
                                                                                 flagIsNext = 1;
@@ -184,13 +186,13 @@ suirtEspecificação da arquitetura DHT
                                                                                 listaIDAdrr = proximo a ser perguntado.
                                                                           -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
                                                                           op = 4 (isPrevAns).
-                                                                          
+
     nó <<<=================== op = 4 (isNextAns) ======================= rootNode
-    -> seta os seguintes campos: 
+    -> seta os seguintes campos:
     prevID1, prevAddr1.
     -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
     op = 5 (joinAsNext), nodeID.
-       
+
     nó ===================== op = 5 (joinAsNext) =====================>>> prev
                                                                           -> busca o ID e o IP do segundo nó anterior ao novo node (prevID2, prevIP2).
                                                                           -> busca o ID e o IP do nó posterior ao novo node (nextID, nextIP).
@@ -198,33 +200,33 @@ suirtEspecificação da arquitetura DHT
                                                                           -> seta os seguintes campos: nextID2 = nextID, nextID, newNodeID.
                                                                           -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
                                                                           op = 6 (joinAsNextAns), (prevID2, prevIP2), (nextID, nextIP), (nextID2, nextIP2).
-                                                                          
-    nó <<<================== op = 6 (joinAsNextAns) ===================== prev                                                                      
-    -> seta os seguintes campos: 
+
+    nó <<<================== op = 6 (joinAsNextAns) ===================== prev
+    -> seta os seguintes campos:
     prevID2, prevIP2, nextID, nextIP, nextID2, nextIP2.
     -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
     op = 7 (joinAsPrev), nodeID.
-    
+
     nó ===================== op = 7 (joinAsPrev) =====================>>> next
                                                                           -> cria a lista com as entradas (key, value) que serão enviadas para o nó
                                                                           que vai entrar na DHT.
                                                                           -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
-                                                                          op = n (joinAsPrevAns), listaKeyValue.   
-                                                                                                               
-    nó <<<================= op = 8 (joinAsPrevAns) ====================== next                                                                          
+                                                                          op = n (joinAsPrevAns), listaKeyValue.
+
+    nó <<<================= op = 8 (joinAsPrevAns) ====================== next
     -> atualiza sua tabela DHT com os valores recebidos.
     -> cria o objeto a ser enviado para o nó com os seguintes parâmetros:
     op = 0 (ack), nodeID.
-    
+
     nó ======================= op = 0 (ack) ==========================>>> next
                                                                           -> retira os elementos correspondentes da sua tabela DHT.
                                                                           -> seta os seguintes campos:
                                                                           prevID2 = prevID, prevIP2 = prevIP, prevID, prevIP.
-                                                                          
+
     nó ===================== op = 9 (joinedDHT) ======================>>> rendezvous point
                                                                           -> atualiza sua DHT local.
-                                                                          
-    nó <<<===================== op = 0 (ack) ============================ rendezvous point                                                                       
+
+    nó <<<===================== op = 0 (ack) ============================ rendezvous point
 
 
 5.3. Saída de um nó da DHT, com aviso prévio.
@@ -234,19 +236,19 @@ suirtEspecificação da arquitetura DHT
     nó ===================== op =  (saida de nó) ====================> antecessor & sucessor
       -> Transferir chave do nó a ser retirado para os nó sucessor          -> ajustar os ponteiros dos nó antecessor e sucessor
 
-   
+
     sucessor =============== op =   ()  ===============================>>> rendezvous
       -> gerar e enviar mensagem para rendezvous			  -> atualizar o DHT local
 	avisar a saída do antecessor					  -> responder Ack do recebimento
    sucessor
 
-    5.3.2. caso o nó que saisse do DHT fosse o nó raiz                 
+    5.3.2. caso o nó que saisse do DHT fosse o nó raiz
 
 
 5.4. Saída de um nó da DHT, sem aviso prévio. (O nó caiu).
 
     nó antecessor ====================== op =  (perda de conex) =======>>> nó sucessor
-    
+
 
 5.5. Inserção de uma entrada (key, value) na DHT.
 

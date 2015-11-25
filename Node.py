@@ -94,7 +94,7 @@ def threadListen():
             if msgR.flagRoot == 1:
                 newNodeAns_Ack(addr)
             if msgR.flagRoot == 0:
-                newNodeAns_isNext()
+                newNodeAns_isNext(addr)
 
 
 ############################### Thread Start Communication ###############################
@@ -146,7 +146,7 @@ def sendNWait(addr):
     msg.ack = msgR.seq
     msg.seq = seq
     lastOP = msg.op
-    if msg.op != 0:
+    if msg.op != 0 and not 3:
         sock.settimeout(2)
     msgString = pickle.dumps(msg)
     sock.sendto(msgString, addr)
@@ -197,7 +197,7 @@ def newNodeAns_Ack(addr):
     sendNWait(addr)
 
 # Utilizada caso o nó não seja o root.
-def newNodeAns_isNext():
+def newNodeAns_isNext(addr):
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
     seq, lastOP, listaKeyValue, msg, msgString, msgR, msgStringR,\
@@ -206,10 +206,15 @@ def newNodeAns_isNext():
     # Atualizando estado
     nodeID = msgR.nodeID
     root = 0
-    rootID = msgR.listaIDAddr[0][0]
-    rootAddr = msgR.listaIDAddr[0][1]
+    rootID = msgR.rootID
+    rootAddr = msgR.rootAddr
     # Criando mensagem
     msg = Mensagem()
+    ###################
+    msg.op = 0
+    print("===== op = 0 (Ack) =====> rendezvous")
+    sendNWait(addr)
+    ###################
     msg.op = 3
     msg.nodeID = nodeID
 
