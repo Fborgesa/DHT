@@ -6,7 +6,7 @@ class Mensagem:
         self.seq = -1
         self.ack = -1
         self.flagRoot = -1
-        self.flagIsNext = -1
+        self.flagIsCloser = -1
         self.nodeID = -1
         self.listaIDAddr = []
         self.listaKeyValue = []
