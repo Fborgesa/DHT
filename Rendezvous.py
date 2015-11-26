@@ -26,6 +26,7 @@ msgStringR = -1
 rtN = -1
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_addr = ('localhost', 30000)
+addrLastSent = server_addr
 
 ############################### Thread Menu ###############################
 def threadMenu():
@@ -40,8 +41,9 @@ def threadMenu():
         2 - Imprimir entradas da DHT.\n")
 
         if op == '1':
-            print ("\trootID = %d, rootAddr = %s, lastOP = %d, offerIDAddr = %s\n\
-                    listaIDAddr: %s\n"\
+
+            print ("\trootID = %s, rootAddr = %s, lastOP = %s, offerIDAddr = %s\n\
+                    listaIDAdrr: %s\n"\
                    % (rootID, rootAddr, lastOp, offerIDAddr, listaIDAddr))
 
         elif op == '2':
@@ -105,16 +107,26 @@ def showTpoligi(DHTLocal):
 def sendNWait(addr):
     global rootID, rootAddr, offerIDAddr, seq, lastOp,\
     listaIDAddr, usedIDs, DHTlocal, msg, msgString, msgR, msgStringR,\
-    sock, server_addr
+    sock, server_addr, addrLastSent
 
     msg.ack = msgR.seq
     msg.seq = seq
     lastOp = msg.op
-    if msg.op != 0:
+    if msg.op != 'ack':
         sock.settimeout(2)
     msgString = pickle.dumps(msg)
+    addrLastSent = addr
+    print("%s Enviada ===== op = %s =====> %s" % (sock.getsockname(), msg.op, addr))
     sock.sendto(msgString, addr)
-    time.sleep(3)
+    time.sleep(1)
+
+def dist(a,b):
+    if (a == b):
+        return 0
+    elif (a < b):
+        return b-a
+    else:
+        return 256 + b - a
 
 ############################## Gerador de IDs ###############################
 def gerarID():
@@ -127,73 +139,8 @@ def gerarID():
     return nodeID
 ########################### CHECAGEM DA POSIÇÃO DE INSERÇÃO DO NOVO NÓ ################
 ##########################################################################
-def chek_positionInList(a, listaIDAddrVar):
-    pass
-    global rootID, rootAddr, offerIDAddr, seq, lastOp,\
-    listaIDAddr, usedIDs, DHTlocal, msg, msgString, msgR, msgStringR,\
-    sock, server_addr
-
-    listaIDAddrAux = []
-    pos = 0
-    b = listaIDAddrVar
-
-    if (a == b[pos][0]):
-        print('IDs duplicado.')
-        return 0
-    elif (len(b) > 1):
-        if (a > b[pos][0]):
-            if((len(b) - 1) > 1):
-                while ((pos < len(b)-1) and (a > b[pos][0])):
-                    if(a > b[pos][0]):
-                        listaIDAddrAux.append(b[pos])
-                        pos = pos + 1
-                    else:
-                        pass
-
-                if((pos == (len(b)-1)) and (a > b[pos][0])) :
-                    listaIDAddrAux.append(b[pos])
-                    listaIDAddrAux.append(offerIDAddr)
-                    listaIDAddrVar = listaIDAddrAux
-
-                elif((pos == (len(b)-1)) and (a < b[pos][0])) :
-                    listaIDAddrAux.append(offerIDAddr)
-                    listaIDAddrAux.append(b[pos])
-                    listaIDAddrVar = listaIDAddrAux
-
-                elif (pos < (len(b)-1) and (a < b[pos][0])):
-                    listaIDAddrAux.append(offerIDAddr)
-                    while pos < len(b)-1:
-                        listaIDAddrAux.append(b[pos])
-                        pos = pos+1
-                    listaIDAddrAux.append(b[pos])
-                    listaIDAddrVar = listaIDAddrAux
-
-            elif(a > b[pos+1][0]):
-                listaIDAddrVar.append(offerIDAddr)
-            else:
-                listaIDAddrAux.append(b[pos])
-                listaIDAddrAux.append(offerIDAddr)
-                pos = pos+1
-                listaIDAddrAux.append(b[pos])
-                listaIDAddrVar = listaIDAddrAux
-
-        else:
-            listaIDAddrAux.append(offerIDAddr)
-            while len(b)-1 > pos:
-                listaIDAddrAux.append(b[pos])
-                pos = pos+1
-            listaIDAddrAux.append(b[pos])
-            listaIDAddrVar = listaIDAddrAux
-
-    else:
-        if (a < b[pos][0]):
-            listaIDAddrAux.append(offerIDAddr)
-            listaIDAddrAux.append(b[pos])
-            listaIDAddrVar = listaIDAddrAux
-        else:
-            listaIDAddrVar.append(offerIDAddr)
-
-    return listaIDAddrVar
+def sortList(a, listaIDAddrVar):
+    return sorted(listaIDAddr, key=lambda tup: tup[0])
 
 ############################ GERENCIAMENTO DE DHT LOCAL ##########################
 ##########################################################################
@@ -216,26 +163,18 @@ def newNode_newNodeAns(addr):
     sock, server_addr
 
     msg = Mensagem()
-    msg.op = 2
+    msg.op = 'newNodeAns'
     msg.nodeID = gerarID()
 
     if rootID == -1:
         msg.flagRoot = 1
+        offerIDAddr = (msg.nodeID, addr)
+        sendNWait(addr)
     else:
         msg.flagRoot = 0
-        msg.rootID = rootID
-        msg.rootAddr = rootAddr
-
-    offerIDAddr = (msg.nodeID, addr)
-    print ("nó <===== op = 2 (newNodeAns) =====")
-    sendNWait(addr)
-##################################################################
-def isNext_isNextAns():
-    global rootID, rootAddr, rootPort, offerIDAddr, seq, lastOp,\
-    nodeIDAddr, usedIDs, DHTlocal, msg, msgString, msgR, msgStringR,\
-    sock, server_addr
-
-    # Se nodeID do nó anterior for maior que o root
+        offerIDAddr = (msg.nodeID, addr)
+        msg.listaIDAddr.append(listaIDAddr[0])
+        sendNWait(addr)
 
 ############################### Main ###############################
 def main():
@@ -249,7 +188,6 @@ def main():
     # chegaram dessincronizados.
     timeOuts = 0
     seqNum = 0
-    addr = server_addr
 
     try:
         t = _thread.start_new_thread(threadMenu, ())
@@ -259,10 +197,10 @@ def main():
 
     while True:
         try:
-            msgStringR, addr = sock.recvfrom(1024)
+            msgStringR, addrR = sock.recvfrom(1024)
             time.sleep(1)
             msgR = pickle.loads(msgStringR)
-            print("op = %d. Recebida." % msgR.op)
+            print("%s Recebida <===== op = %s ===== %s" % (sock.getsockname(), msgR.op, addrR))
 #            print ("msg.ack = %d. seq = %d." % (msgR.ack, seq))
 
             # Caso a mensagem chegue com o número de sequência dessicronizado.
@@ -274,8 +212,8 @@ def main():
                     timeOuts = 0
                     seqNum = 0
                 else:
-                    print("Reenvio ===== op = %d =====>" % msg.op)
-                    sock.sendto(msgString, addr)
+                    print("Reenvio %s ===== op = %s =====> %s" % (sock.getsockname(), msg.op, addrLastSent))
+                    sock.sendto(msgString, addrLastSent)
                     seqNum = seqNum + 1
 
             # Caso a mensagem chegue corretamente.
@@ -296,35 +234,32 @@ def main():
                 timeOuts = 0
                 seqNum = 0
             else:
-                print("Reenvio ===== op = %d =====>" % msg.op)
-                sock.sendto(msgString, addr)
+                print("Reenvio %s ===== op = %s =====> %s" % (sock.getsockname(), msg.op, addrLastSent))
+                sock.sendto(msgString, addrLastSent)
                 timeOuts = timeOuts + 1
 
         ### Tratamento de cada caso ###
         # Tratamento do caso 0 (teste).
         if msgR.op == -1 and msgR.flagRoot == -1 and msgR.nodeID == -1 and\
-           msgR.listaIDIP == -1 and msgR.listaKeyValue == -1:
+           msgR.listaIDAddr == [] and msgR.listaKeyValue == []:
             print('Teste ok !!!')
 
-############ VERIFICAÇÃO DA REQUISIÇÃO DE CONEXÃO ###################
-        elif msgR.op == 1:
-            newNode_newNodeAns(addr)
 
-        elif msgR.op == 3:
-            isNext_isNextAns()
 
-############## VERIFICAÇÃO DO Ack = 0 RECEBIDO DO NÓ #################
-        elif msgR.op == 0 and lastOp == 2 and rootID == -1:
+        # elif msgR.op == 0 and lastOp == 2 and rootID != -1:
+        #     listaIDAddr = sortList(offerIDAddr[0], listaIDAddr)
+        #     DHTlocal = listaIDAddr
+        #     showTpoligi(DHTlocal)
+
+        if msgR.op == 'ack' and lastOp == 'newNodeAns':
             rootID = offerIDAddr[0]
             rootAddr = offerIDAddr[1]
             listaIDAddr.append(offerIDAddr)
-            DHTlocal = listaIDAddr
+            DHTlocal = sorted(listaIDAddr, key=lambda tup: tup[0])
             showTpoligi(DHTlocal)
 
-        elif msgR.op == 0 and lastOp == 2 and rootID != -1:
-            listaIDAddr = chek_positionInList(offerIDAddr[0], listaIDAddr)
-            DHTlocal = listaIDAddr
-            showTpoligi(DHTlocal)
+        if msgR.op == 'newNode':
+            newNode_newNodeAns(addrR)
 
 if __name__ == "__main__":
     main()
