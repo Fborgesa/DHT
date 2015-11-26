@@ -1,5 +1,4 @@
 
-
 class Mensagem:
     def __init__(self):
         self.op = -1

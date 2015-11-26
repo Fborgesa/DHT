@@ -23,7 +23,7 @@ msg = -1
 msgString = -1
 msgR = Mensagem()
 msgStringR = -1
-
+rtN = -1
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_addr = ('localhost', 30000)
 
@@ -49,44 +49,56 @@ def threadMenu():
 ############################## MOSTRA TOPOLÓGIA DAS ENTRADAS DOS NÓs ##################
 ############################################################################
 def showTpoligi(DHTLocal):
+    global rtN
+    Pini = 0
+    posRoot = 0
+    showEtri = []
+
 
     tamList = len(DHTLocal)
-    Pini = 0
 
     if(len(DHTLocal) - 1 == 0):
         rtN = DHTLocal[0][0]
-        print('Primeira entrada no DHT:\n\nrtN(%d)' %  (DHTLocal[0][0]))
-    elif (len(DHTLocal) > 1):
-        if(tamList%2 == 0):
-            while ((Pini+1) != tamList):
-                if (DHTLocal[Pini][0] == rtN):
-                    if(Pini == 0):
-                        print('<--->%d<--->rtN(%d)<--->' % (DHTLocal[tamList][0], DHTLocal[Pini][0]))
-                        Pini = Pini+1
-                        tamList = tamList-1
-                    else:
-                        pass
-                elif (DHTLocal[tamList][0] == rtN):
-                    if(len(DHTLocal) == tamList):
-                        print('<--->rtN(%d)<--->%d<--->' % (DHTLocal[tamList][0], DHTLocal[Pini][0]))
-                        Pini = Pini+1
-                        tamList = tamList-1
-        else:
-            pass
-            while True:
-                if (DHTLocal[Pini][0] == rtN):
-                    if(Pini == 0):
-                        print('<--->%d<--->rtN(%d)<--->' % (DHTLocal[tamList][0], DHTLocal[Pini][0]))
-                        Pini = Pini+1
-                        tamList = tamList-1
-                    else:
-                        pass
-                elif(DHTLocal[tamList][0] == rtN):
-                    if(len(DHTLocal) == tamList):
-                        print('<--->rtN(%d)<--->%d<--->' % (DHTLocal[tamList][0], DHTLocal[Pini][0]))
-                        Pini = Pini+1
-                        tamList = tamList-1
+        IdStr = str(DHTLocal[Pini][0])
+        showEtri.append('<-rtN'+IdStr +'->')
+        print('Primeira entrada no DHT:\n\n\t%s'% showEtri[Pini])
 
+    elif (len(DHTLocal) > 1):
+        while (DHTLocal[posRoot][0] != rtN):
+            posRoot = posRoot+1
+
+
+        while (Pini < (len(DHTLocal)-1)):
+
+            IdStr = str(DHTLocal[Pini][0])
+            if(DHTLocal[Pini][0] != rtN):
+                if(Pini == 0):
+                    showEtri.append('<-'+IdStr)
+                else:
+                    showEtri.append('<->'+IdStr)
+
+            else:
+                if(Pini == 0):
+                    if(len(DHTLocal) == 2):
+                        showEtri.append('<-rtN'+IdStr+'->')
+                    else:
+                        showEtri.append('<-rtN'+IdStr)
+                else:
+                    showEtri.append('<->rtN'+IdStr)
+
+            Pini = Pini+1
+            if (Pini == len(DHTLocal)-1):
+                    IdStr = str(DHTLocal[Pini][0])
+                    if(DHTLocal[Pini][0] == rtN):
+                        showEtri.append('<-rtN'+IdStr+'->')
+                    else:
+                        showEtri.append('<-'+IdStr+'->')
+        cont = 0
+        print('\n---------NÓs atual -------\n\t')
+        while (cont < len(showEtri)-1):
+            print (showEtri[cont], end='' )
+            cont = cont+1
+        print(showEtri[cont])
 
 ############################### Definições das funções   ###############################
 ############################### que tratam cada mensagem ###############################
@@ -125,81 +137,62 @@ def chek_positionInList(a, listaIDAddrVar):
     pos = 0
     b = listaIDAddrVar
 
-    #print('O QUE ESTOU COMPARANDO????')
-    #print("a = %d e b = %d" % (a, b[pos][0]))
-    #print('LEN(B) = %d', len(b))
     if (a == b[pos][0]):
         print('IDs duplicado.')
         return 0
     elif (len(b) > 1):
-        #print('TENTANDO RESOLVER ORDENAMENTO DO CASO TAM = 2')
         if (a > b[pos][0]):
-            #print('A > PRIMEIRO ELEMENTO DA LISTA')
             if((len(b) - 1) > 1):
                 while ((pos < len(b)-1) and (a > b[pos][0])):
-                    #print('Entreando no while.')
-                    #pass
                     if(a > b[pos][0]):
                         listaIDAddrAux.append(b[pos])
                         pos = pos + 1
                     else:
                         pass
+
                 if((pos == (len(b)-1)) and (a > b[pos][0])) :
-                    #print('CASO POS == LEN(B)-1 E A > B[POS][0]')
                     listaIDAddrAux.append(b[pos])
                     listaIDAddrAux.append(offerIDAddr)
                     listaIDAddrVar = listaIDAddrAux
-                    #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
+
                 elif((pos == (len(b)-1)) and (a < b[pos][0])) :
-                    #print('CASO POS == LEN(B)-1 E A < B[POS][0]')
                     listaIDAddrAux.append(offerIDAddr)
                     listaIDAddrAux.append(b[pos])
                     listaIDAddrVar = listaIDAddrAux
-                    #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
+
                 elif (pos < (len(b)-1) and (a < b[pos][0])):
-                    #print('CASO POS < LEN(B) E A < B[POS][0]')
                     listaIDAddrAux.append(offerIDAddr)
                     while pos < len(b)-1:
                         listaIDAddrAux.append(b[pos])
                         pos = pos+1
                     listaIDAddrAux.append(b[pos])
                     listaIDAddrVar = listaIDAddrAux
-                    #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
+
             elif(a > b[pos+1][0]):
-                #print('A > POS+1??')
                 listaIDAddrVar.append(offerIDAddr)
-                #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
-                #listaIDAddrVar = listaIDAddrAux
             else:
-                #print("O QUE ESTU COMPARANDO AQUI (A >B[POS+1] : %d > %d" % (a, b[pos+1][0]))
-                #print('NÃAAOOOOO EHHHHH')
                 listaIDAddrAux.append(b[pos])
                 listaIDAddrAux.append(offerIDAddr)
                 pos = pos+1
                 listaIDAddrAux.append(b[pos])
                 listaIDAddrVar = listaIDAddrAux
-                #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
+
         else:
-            #print('A < PRIMEIRO ELEMENTO DA LISTA')
-            #pass
             listaIDAddrAux.append(offerIDAddr)
             while len(b)-1 > pos:
                 listaIDAddrAux.append(b[pos])
                 pos = pos+1
             listaIDAddrAux.append(b[pos])
             listaIDAddrVar = listaIDAddrAux
-            #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
+
     else:
-        #print('CASO LEN(B) == 1')
         if (a < b[pos][0]):
             listaIDAddrAux.append(offerIDAddr)
             listaIDAddrAux.append(b[pos])
             listaIDAddrVar = listaIDAddrAux
-            #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
         else:
             listaIDAddrVar.append(offerIDAddr)
-            #print ("listaIDAddrAux = %s,, offerIDAddr = %s, listaIDAddrVar: %s\n" % (listaIDAddrAux, offerIDAddr, listaIDAddrVar))
-            #listaIDAddrVar = listaIDAddrAux
+
     return listaIDAddrVar
 
 ############################ GERENCIAMENTO DE DHT LOCAL ##########################
@@ -225,18 +218,14 @@ def newNode_newNodeAns(addr):
     msg = Mensagem()
     msg.op = 2
     msg.nodeID = gerarID()
+
     if rootID == -1:
         msg.flagRoot = 1
-        #offerIDAddr = (msg.nodeID, addr)
-        #print ("nó <===== op = 2 (newNodeAns) =====")
-       #sendNWait(addr)
     else:
         msg.flagRoot = 0
         msg.rootID = rootID
         msg.rootAddr = rootAddr
-        #offerIDAddr = (msg.nodeID, addr)
-        #print ("nó <===== op = 2 (newNodeAns) =====")
-        #sendNWait(addr)
+
     offerIDAddr = (msg.nodeID, addr)
     print ("nó <===== op = 2 (newNodeAns) =====")
     sendNWait(addr)
@@ -301,6 +290,7 @@ def main():
         except socket.timeout:
             print ("Destino não responde.")
             msgR.op = -2
+
             if timeOuts == 2:
                 sock.settimeout(None)
                 timeOuts = 0
@@ -329,11 +319,12 @@ def main():
             rootAddr = offerIDAddr[1]
             listaIDAddr.append(offerIDAddr)
             DHTlocal = listaIDAddr
-            #showTpoligi(DHTlocal)
+            showTpoligi(DHTlocal)
+
         elif msgR.op == 0 and lastOp == 2 and rootID != -1:
             listaIDAddr = chek_positionInList(offerIDAddr[0], listaIDAddr)
-            #DHTlocal = listaIDAddr
-            #showTpoligi(DHTlocal)
+            DHTlocal = listaIDAddr
+            showTpoligi(DHTlocal)
 
 if __name__ == "__main__":
     main()
