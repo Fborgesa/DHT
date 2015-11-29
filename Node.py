@@ -6,7 +6,7 @@ import hashlib
 import copy
 import time
 import _thread
-import RDT
+import sys
 from Mensagem import Mensagem
 
 ############################### Estado do Node ###############################
@@ -36,6 +36,7 @@ msg = Mensagem()
 msgString = -1
 msgR = Mensagem()
 msgStringR = -1
+keyValue = ()
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_addr = ('localhost', 30000)
@@ -129,6 +130,19 @@ def threadListen():
         if msgR.op == 'joinAsNextAns':
             joinAsNextAns_Ack()
 
+        if msgR.op == 'isCloserKey':
+            isCloserKey_isCloserKeyAns()
+
+        if msgR.op == 'isCloserKeyAns':
+            isCloserKeyAns_isCloserKey()
+
+        if msgR.op == 'haveKey':
+            haveKey_haveKeyAns()
+
+        if msgR.op == 'haveKeyAns':
+            haveKeyAns_haveKey()
+
+
 ############################### Thread Start Communication ###############################
 # Thread que exibe o menu e interage com o usuário. Nela estão os tratamentos das
 # mensagens que começam a comunicação.
@@ -146,7 +160,10 @@ def threadStartCommu():
         2 - Imprimir nós conhecidos.\n\
         3 - Imprimir entradas da DHT.\n\
         4 - Entrar na DHT.\n\
-        5 - Sair da DHT\n")
+        5 - Sair da DHT.\n\
+        6 - Salvar valor na DHT.\n\
+        7 - Buscar valor na DHT.\n")
+
 
         if op == '0':
             testCom()
@@ -163,13 +180,19 @@ def threadStartCommu():
             print ("%s" % listaIDAddr)
 
         elif op == '3':
-            pass
+            print ("%s" % listaKeyValue)
 
         elif op == '4':
             newNode()
 
         elif op == '5':
             pass
+
+        elif op == '6':
+            isCloserKey()
+
+        elif op == '7':
+            haveKey()
 
 ############################### Definições das funções   ###############################
 ############################### que tratam cada mensagem ###############################
@@ -183,6 +206,7 @@ def sendNWait(addr):
     msg.seq = seq
     lastOP = msg.op
     if msg.op != 'ack':
+        # print("Teste !!! Timeout ???")
         sock.settimeout(2)
     msgString = pickle.dumps(msg)
     addrLastSent = addr
@@ -198,21 +222,20 @@ def dist(a,b):
     else:
         return 256 + b - a
 
-def closerKnown():
+# Devolve o ID e o endereço do par mais próximo conhecido.
+def closerKnown(nodeIDtested):
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
     prevID2, prevAddr2, nextID, nextAddr, nextID2, nextAddr2,\
     seq, lastOP, listaKeyValue, listaIDAddr, msg, msgString, msgR, msgStringR,\
     sock, server_addr, addr
 
     closer = (nodeID, sock.getsockname())
-    closerDist = dist(msgR.nodeID, nodeID)
+    closerDist = dist(nodeIDtested, nodeID)
     for node in listaIDAddr:
-        print(node)
-        lastDist = dist(msgR.nodeID, node[0])
+        lastDist = dist(nodeIDtested, node[0])
         if lastDist < closerDist:
             closer = node
             closerDist = lastDist
-
     return closer
 
 def keyValueToUpdate():
@@ -228,6 +251,17 @@ def keyValueToUpdate():
 def addToList(list, itemToAdd):
     if itemToAdd not in list:
         list.append(itemToAdd)
+
+def hashKey(key):
+    # Não perca tempo entendendo isso.
+    # A operação com "%" faz os valores ficarem em um range positivo entre 0 e (sys.maxsize + 1) * 2. (Eu acho lol)
+    # É como se essa operação passasse um número em complemento de 2 para um número binário comum (unsined).
+    hashedKey = hash(key) % ((sys.maxsize + 1) * 2)
+    hashedKey = hashedKey / ( ( ( sys.maxsize + 1 ) * 2 ) / 256 )
+    hashedKey = round(hashedKey)
+    print(" Teste !!! hash gerado : %s" % hashedKey)
+    assert 0 <= hashedKey <= 256
+    return hashedKey
 
 def testCom():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
@@ -347,7 +381,7 @@ def isCloser_isCloserAns():
     seq, lastOP, listaKeyValue, listaIDAddr, msg, msgString, msgR, msgStringR,\
     sock, server_addr, addrR
 
-    closer = closerKnown()
+    closer = closerKnown(msgR.nodeID)
     msg = Mensagem()
     msg.op = 'isCloserAns'
     msg.listaIDAddr.append(closer)
@@ -489,6 +523,124 @@ def joinAsNextAns_Ack():
     msg = Mensagem()
     msg.op = 'ack'
     sendNWait(addrR)
+
+
+def isCloserKey():
+    global msg, listaKeyValue, nodeID, sock, keyValue
+
+    key = input("Digite a chave a ser armazenada.\n")
+    hashedKey = hashKey(key)
+
+    closer = closerKnown(hashedKey)
+    keyValue = (hashedKey, (nodeID, sock.getsockname()))
+    if closer[0] == nodeID:
+        addToList(listaKeyValue, keyValue)
+    else:
+        msg = Mensagem()
+        msg.op = 'isCloserKey'
+        msg.nodeID = hashedKey
+        msg.listaKeyValue.append(keyValue)
+        sendNWait(closer[1])
+
+def isCloserKey_isCloserKeyAns():
+    global msg, msgR, nodeID, addrR
+
+    closer = closerKnown(msgR.nodeID)
+    msg = Mensagem()
+    msg.op = 'isCloserKeyAns'
+    msg.listaIDAddr.append(closer)
+    if closer[0] == nodeID:
+        msg.flagIsCloser = 1
+        addToList(listaKeyValue, msgR.listaKeyValue[0])
+    else:
+        msg.flagIsCloser = 0
+    sendNWait(addrR)
+
+def isCloserKeyAns_isCloserKey():
+    global msg, addrR, keyValue, msgR
+
+    # Confirmando o recebimento da mensagem op = isCloserKeyAns
+    # com um ack.
+    msg = Mensagem()
+    msg.op = 'ack'
+    sendNWait(addrR)
+
+    # Buscando o mais próximo da chave.
+    if msgR.flagIsCloser == 0:
+        msg = Mensagem()
+        msg.op = 'isCloserKey'
+        msg.nodeID = keyValue[0]
+        msg.listaKeyValue.append(keyValue)
+        sendNWait(msgR.listaIDAddr[0][1])
+
+def haveKey():
+    global listaKeyValue, msg, addrR, nodeID
+
+    key = input("Digite a chave a ser buscada.\n")
+    hashedKey = hashKey(key)
+
+    keyFound = -1
+    for keyValue in listaKeyValue:
+        if keyValue[0] == hashedKey:
+            keyFound = keyValue
+
+    # A chave foi encontrada.
+    if keyFound != -1:
+        print(keyFound)
+
+    elif keyFound == -1:
+        closer = closerKnown(hashedKey)
+        if closer[0] == nodeID:
+            print("Chave não encontrada.\n")
+        else:
+            msg = Mensagem()
+            msg.op = 'haveKey'
+            msg.nodeID = hashedKey
+            sendNWait(closer[1])
+
+def haveKey_haveKeyAns():
+    global listaKeyValue, listaIDAddr, msg, msgR, addR
+
+    keyFound = -1
+    for keyValue in listaKeyValue:
+        print("Teste !!! Hashedkey = %s, keyValue = %s" % (keyValue[0], keyValue))
+        if keyValue[0] == msgR.nodeID:
+            keyFound = keyValue
+
+    msg = Mensagem()
+    msg.op = 'haveKeyAns'
+    msg.nodeID = msgR.nodeID
+    if keyFound == -1:
+        msg.flagHaveKey = 0
+        closer = closerKnown(msgR.nodeID)
+        msg.listaIDAddr.append(closer)
+    elif keyFound != -1:
+        msg.flagHaveKey = 1
+        msg.listaKeyValue.append(keyFound)
+    sendNWait(addrR)
+
+def haveKeyAns_haveKey():
+    global  msg, addrR, listaKeyValue, msgR
+
+    # Confirmando o recebimento da mensagem op = haveKeyAns
+    # com um ack.
+    msg = Mensagem()
+    msg.op = 'ack'
+    sendNWait(addrR)
+
+    # Imprimindo a chave, caso ela tenha sido encontrada.
+    if msgR.flagHaveKey == 1:
+        print(msgR.listaKeyValue[0])
+
+    # Buscando a chave, caso ela nao tenha sido encontrada.
+    elif msgR.flagHaveKey == 0:
+        if addrR == msgR.listaIDAddr[0][1]:
+            print("Chave não encontrada.\n")
+        else:
+            msg = Mensagem()
+            msg.op = 'haveKey'
+            msg.nodeID = msgR.nodeID
+            sendNWait(msgR.listaIDAddr[0][1])
 
 ############################### Main ###############################
 def main():

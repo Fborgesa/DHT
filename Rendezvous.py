@@ -96,7 +96,7 @@ def showTpoligi(DHTLocal):
                     else:
                         showEtri.append('<-'+IdStr+'->')
         cont = 0
-        print('\n---------NÓs atual -------\n\t')
+        print('\n--------- Nós atuais -------\n\t')
         while (cont < len(showEtri)-1):
             print (showEtri[cont], end='' )
             cont = cont+1
