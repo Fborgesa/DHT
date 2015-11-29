@@ -279,7 +279,7 @@ def AckUpdt():
     listaKeyValueUpdt, nextID2, nextAddr2, prevID2, prevAddr2
 
     if lastOP == 'joinAsPrevAns':
-        # Somente para o segundo nó entrante.
+        # Somente para o terceiro nó entrante.
         if nodeID == nextID2 and nodeID != nextID:
             prevID2 = nextID
             prevAddr2 = nextAddr
@@ -294,7 +294,7 @@ def AckUpdt():
             listaKeyValue.remove(entry)
 
     if lastOP == 'joinAsNextAns':
-        # Somente para o segundo nó entrante.
+        # Somente para o terceiro nó entrante.
         if nodeID == prevID2 and nodeID != nextID:
             nextID2 = prevID
             nextAddr2 = prevAddr
@@ -443,7 +443,8 @@ def joinAsPrev_joinAsPrevAns():
     ## O next do novo nó.
     msg.listaIDAddr.append((nodeID, sock.getsockname()))
     ## O next2 do novo nó.
-    if nodeID == nextID2:
+    # Isso só deve ocorrer para o segundo nó entrante.
+    if nodeID == nextID:
         msg.listaIDAddr.append((msgR.nodeID, addrR))
     else:
         msg.listaIDAddr.append((nextID, nextAddr))
@@ -463,7 +464,7 @@ def joinAsPrevAns_joinAsNext():
     nextID = msgR.listaIDAddr[0][0]
     nextAddr = msgR.listaIDAddr[0][1]
     nextID2 = msgR.listaIDAddr[1][0]
-    nextAddr = msgR.listaIDAddr[1][1]
+    nextAddr2 = msgR.listaIDAddr[1][1]
     prevID = msgR.listaIDAddr[2][0]
     prevAddr = msgR.listaIDAddr[2][1]
     # next
