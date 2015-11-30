@@ -36,18 +36,17 @@ def threadMenu():
 
     while True:
         op = input("\
-        Escolha uma opção:\n\
-        1 - Imprimir estado.\n\
-        2 - Imprimir entradas da DHT.\n")
+Escolha uma opção:\n\
+1 - Imprimir estado.\n\
+2 - Imprimir nós conhecidos.\n")
 
         if op == '1':
 
-            print ("\trootID = %s, rootAddr = %s, lastOP = %s, offerIDAddr = %s\n\
-                    listaIDAdrr: %s\n"\
-                   % (rootID, rootAddr, lastOp, offerIDAddr, listaIDAddr))
+            print ("rootID = %s, rootAddr = %s, lastOP = %s, offerIDAddr = %s\n\
+listaIDAdrr: %s\n" % (rootID, rootAddr, lastOp, offerIDAddr, listaIDAddr))
 
         elif op == '2':
-            pass
+            print(listaIDAddr)
 ############################## MOSTRA TOPOLÓGIA DAS ENTRADAS DOS NÓs ##################
 ############################################################################
 def showTpoligi(DHTLocal):
@@ -252,14 +251,31 @@ def main():
         #     showTpoligi(DHTlocal)
 
         if msgR.op == 'ack' and lastOp == 'newNodeAns':
-            rootID = offerIDAddr[0]
-            rootAddr = offerIDAddr[1]
+            if msg.flagRoot == 1:
+                rootID = offerIDAddr[0]
+                rootAddr = offerIDAddr[1]
             listaIDAddr.append(offerIDAddr)
             DHTlocal = sorted(listaIDAddr, key=lambda tup: tup[0])
             showTpoligi(DHTlocal)
 
         if msgR.op == 'newNode':
             newNode_newNodeAns(addrR)
+
+        if msgR.op == 'left':
+            if msgR.flagRoot == 1:
+                rootID = msgR.listaIDAddr[0][0]
+                rootAddr = msgR.listaIDAddr[0][1]
+            usedIDs.remove(msgR.nodeID)
+            if ((msgR.nodeID, addrR)) in listaIDAddr:
+                listaIDAddr.remove((msgR.nodeID, addrR))
+            DHTlocal = sorted(listaIDAddr, key=lambda tup: tup[0])
+            showTpoligi(DHTlocal)
+            if not DHTlocal:
+                print("DHT vazia!\n")
+            msg = Mensagem()
+            msg.op = 'ack'
+            sendNWait(addrR)
+
 
 if __name__ == "__main__":
     main()

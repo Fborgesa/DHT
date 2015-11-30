@@ -74,7 +74,7 @@ def threadListen():
                     timeOuts = 0
                     seqNum = 0
                 else:
-                    print("Reenvio %s ===== op = %s =====> %s" % (sock.getsockname(), msg.op, addrLastSent))
+                    print("%s Reenvio ===== op = %s =====> %s" % (sock.getsockname(), msg.op, addrLastSent))
                     sock.sendto(msgString, addrLastSent)
                     seqNum = seqNum + 1
 
@@ -95,7 +95,7 @@ def threadListen():
                 timeOuts = 0
                 seqNum = 0
             else:
-                print("Reenvio %s ===== op = %s =====> %s" % (sock.getsockname(), msg.op, addrLastSent))
+                print("%s Reenvio ===== op = %s =====> %s" % (sock.getsockname(), msg.op, addrLastSent))
                 sock.sendto(msgString, addrLastSent)
                 timeOuts = timeOuts + 1
 
@@ -142,6 +142,12 @@ def threadListen():
         if msgR.op == 'haveKeyAns':
             haveKeyAns_haveKey()
 
+        if msgR.op == 'leaveAsPrev':
+            leaveAsPrev_ack()
+
+        if msgR.op == 'leaveAsNext':
+            leaveAsNext_ack()
+
 
 ############################### Thread Start Communication ###############################
 # Thread que exibe o menu e interage com o usuário. Nela estão os tratamentos das
@@ -154,27 +160,27 @@ def threadStartCommu():
 
     while True:
         op = input("\
-        Escolha uma opção:\n\
-        0 - Testar comunicação.\n\
-        1 - Imprimir estado.\n\
-        2 - Imprimir nós conhecidos.\n\
-        3 - Imprimir entradas da DHT.\n\
-        4 - Entrar na DHT.\n\
-        5 - Sair da DHT.\n\
-        6 - Salvar valor na DHT.\n\
-        7 - Buscar valor na DHT.\n")
+Escolha uma opção:\n\
+0 - Testar comunicação.\n\
+1 - Imprimir estado.\n\
+2 - Imprimir nós conhecidos.\n\
+3 - Imprimir entradas da DHT.\n\
+4 - Entrar na DHT.\n\
+5 - Sair da DHT.\n\
+6 - Salvar valor na DHT.\n\
+7 - Buscar valor na DHT.\n")
 
 
         if op == '0':
             testCom()
 
         elif op == '1':
-            print ("\tnodeID = %d, root = %d, rootID = %d, rootAddr = %s\n\
-            prevID = %d, prevAddr = %s, prevID2 = %d, prevAddr2 = %s\n\
-            nextID = %d, nextAddr = %s, nextID2 = %d, nextAddr2 = %s\n"
-            % (nodeID, root, rootID, rootAddr, prevID, prevAddr, prevID2, prevAddr2,
-            nextID, nextAddr, nextID2, nextAddr2)
-            )
+            print ("nodeID = %d, root = %d, rootID = %d, rootAddr = %s\n\
+prevID = %d, prevAddr = %s, prevID2 = %d, prevAddr2 = %s\n\
+nextID = %d, nextAddr = %s, nextID2 = %d, nextAddr2 = %s\n"
+% (nodeID, root, rootID, rootAddr, prevID, prevAddr, prevID2, prevAddr2,
+nextID, nextAddr, nextID2, nextAddr2)
+)
 
         elif op == '2':
             print ("%s" % listaIDAddr)
@@ -186,7 +192,7 @@ def threadStartCommu():
             newNode()
 
         elif op == '5':
-            pass
+            leaveAsPrev()
 
         elif op == '6':
             isCloserKey()
@@ -293,7 +299,7 @@ def AckUpdt():
         for entry in listaKeyValueUpdt:
             listaKeyValue.remove(entry)
 
-    if lastOP == 'joinAsNextAns':
+    elif lastOP == 'joinAsNextAns':
         # Somente para o terceiro nó entrante.
         if nodeID == prevID2 and nodeID != nextID:
             nextID2 = prevID
@@ -303,6 +309,12 @@ def AckUpdt():
 
         nextID = nextIDUpdt
         nextAddr = nextAddrUpdt
+
+    elif lastOP == 'leaveAsPrev':
+        ack_leaveAsNext()
+
+    elif lastOP == 'leaveAsNext':
+        left()
 
 def newNode():
     global nodeID, root, rootID, rootAddr, prevID, prevAddr,\
@@ -642,6 +654,126 @@ def haveKeyAns_haveKey():
             msg.op = 'haveKey'
             msg.nodeID = msgR.nodeID
             sendNWait(msgR.listaIDAddr[0][1])
+
+def leaveAsPrev():
+    global msg, root, prevID, prevAddr, prevID2, prevAddr2, nextAddr, nodeID, nextID
+
+    # Caso o nó seja o único nó da DHT.
+    if nodeID == nextID:
+        left()
+    else:
+        msg = Mensagem()
+        msg.op = 'leaveAsPrev'
+        msg.flagRoot = root
+        msg.listaIDAddr.append((prevID, prevAddr))
+        msg.listaIDAddr.append((prevID2, prevAddr2))
+        sendNWait(nextAddr)
+
+def leaveAsPrev_ack():
+    global msg, prevID2, nodeID, msgR, prevAddr2, listaIDAddr, root, rootID, prevID, prevAddr, rootAddr,\
+    addr, sock, nextID2, nextAddr2
+
+    # No caso de só existirem dois nós.
+    if prevID2 == nodeID:
+        pass
+    # Caso existam 3 nós.
+    elif prevID2 == nextID:
+        prevID2 = nodeID
+        prevAddr2 = sock.getsockname()
+        nextID2 = nodeID
+        nextAddr2 = sock.getsockname()
+    # Caso existam mais.
+    else:
+        prevID2 = msgR.listaIDAddr[1][0]
+        prevAddr2 = msgR.listaIDAddr[1][1]
+        addToList(listaIDAddr, msgR.listaIDAddr[1])
+
+    # Caso o nó que está saindo seja o root.
+    if msgR.flagRoot == 1:
+        root = 1
+        rootID = nodeID
+        rootAddr = sock.getsockname()
+
+    # Caso o nó qu
+
+    if ((prevID, addrR)) in listaIDAddr:
+        listaIDAddr.remove((prevID, addrR))
+
+    prevID = msgR.listaIDAddr[0][0]
+    prevAddr = msgR.listaIDAddr[0][1]
+
+    msg = Mensagem()
+    msg.op = 'ack'
+    sendNWait(addrR)
+
+def ack_leaveAsNext():
+    global msg, nextID, nextAddr, nextID2, nextAddr2, prevAddr
+
+    msg = Mensagem()
+    msg.op = 'leaveAsNext'
+    msg.listaIDAddr.append((nextID, nextAddr))
+    msg.listaIDAddr.append((nextID2, nextAddr2))
+    sendNWait(prevAddr)
+
+def leaveAsNext_ack():
+    global msg, nextID2, nodeID, msgR, nextAddr2, listaIDAddr, nextID, nextAddr, addrR, sock,\
+    prevID2, prevAddr2
+
+    # No caso de só existirem dois nós.
+    if nextID2 == nodeID:
+        pass
+    # Caso existam 3 nós.
+    elif nextID2 == prevID:
+        prevID2 = nodeID
+        prevAddr2 = sock.getsockname()
+        nextID2 = nodeID
+        nextAddr2 = sock.getsockname()
+    # Caso existam mais.
+    else:
+        nextID2 = msgR.listaIDAddr[1][0]
+        nextAddr2 = msgR.listaIDAddr[1][1]
+        addToList(listaIDAddr, msgR.listaIDAddr[1])
+
+    if ((nextID, addrR)) in listaIDAddr:
+        listaIDAddr.remove((nextID, addrR))
+
+    nextID = msgR.listaIDAddr[0][0]
+    nextAddr = msgR.listaIDAddr[0][1]
+
+    msg = Mensagem()
+    msg.op = 'ack'
+    sendNWait(addrR)
+
+def left():
+    global msg, nodeID, server_addr, nextID, nextAddr, root, rootID, rootAddr,\
+    prevID, prevAddr, prevID2, prevAddr2, nextID2, nextAddr2, listaKeyValue, listaIDAddr
+
+    msg = Mensagem()
+    msg.op = 'left'
+    msg.nodeID = nodeID
+    msg.flagRoot = root
+    # Caso o nó seja o único nó da DHT.
+    if nodeID == nextID:
+        msg.listaIDAddr.append((-1, -1))
+    else:
+        msg.listaIDAddr.append((nextID, nextAddr))
+    sendNWait(server_addr)
+
+    # Voltando para o estado inicial.
+    nodeID = -1
+    root = -1
+    rootID = -1
+    rootAddr = -1
+    prevID = -1
+    prevAddr = -1
+    prevID2 = -1
+    prevAddr2 = -1
+    nextID = -1
+    nextAddr = -1
+    nextID2 = -1
+    nextAddr2 = -1
+    listaKeyValue = []
+    listaIDAddr = []
 
 ############################### Main ###############################
 def main():
